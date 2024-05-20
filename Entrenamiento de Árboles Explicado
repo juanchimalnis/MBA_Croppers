@@ -1,0 +1,150 @@
+###### ***1- Encabezado YAML:** Se especifican metadatos como el título, el autor y la fecha del documento, así como el formato de salida (en este caso, un documento HTML).*
+
+---
+title: "Entrenamiento de Árboles"
+author: "Ricardo R. Palma"
+date: "19/05/2024"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###### ***2- Configuración inicial y carga de paquetes:** Se configuran las opciones iniciales del documento y se cargan los paquetes necesarios, como car, readr, y party.*
+
+######   *car: Proporciona funciones para el análisis de datos y la visualización.*
+######   *readr: Proporciona funciones para la lectura de datos en varios formatos.*
+######   *party: Proporciona funciones para el análisis de árboles de decisión y técnicas de clasificación.*
+
+###### ***3- Lectura de datos y resumen:** Se leen los datos desde un archivo CSV llamado "BSC_proveedores.csv" y se almacenan en un objeto llamado partners. Luego, se muestra un resumen de los datos utilizando la función summary().*
+
+
+```{r}
+library(car)
+library(readr)
+partners <- read_csv("BSC_proveedores.csv", 
+    col_types = cols(Empresa = col_factor(levels = c("Imitadora", 
+        "Proactiva", "Innovadora"))))
+# partners <- read.table("BSC_proveedores.csv",header=TRUE,sep=",")
+summary(partners)
+```
+######   *read_csv("BSC_proveedores.csv", col_types = cols(Empresa = col_factor(levels = c("Imitadora", "Proactiva", "Innovadora")))): Esta línea de código lee un archivo CSV llamado "BSC_proveedores.csv" y carga los datos en un objeto llamado partners. Además, especifica que la columna "Empresa" debe tratarse como un factor con niveles específicos ("Imitadora", "Proactiva", "Innovadora").*
+
+######   *summary(partners): Esta función muestra un resumen estadístico de los datos almacenados en el objeto partners, incluyendo estadísticas como el número de observaciones, la media, la mediana, los cuartiles, y otros para cada variable en el conjunto de datos.*
+
+
+
+###### ***4- Matriz de covarianza:** Se utiliza la función scatterPlotMatrix() del paquete scatterPlotMatrix para mostrar una matriz de dispersión de las variables en el conjunto de datos.*
+
+######   *library(scatterPlotMatrix): Esta línea carga el paquete scatterPlotMatrix, que proporciona funciones para crear matrices de dispersión.*
+
+######   *scatterPlotMatrix(partners): Esta función crea una matriz de dispersión de las variables en el conjunto de datos partners, lo que permite visualizar las relaciones entre pares de variables mediante diagramas de dispersión.*
+
+Matriz de Covarianza
+
+```{r}
+library(scatterPlotMatrix)
+scatterPlotMatrix(partners)
+```
+Como vemos la columna 1, PK, (primary key) no es parte de los datos. Se trata de un número secuencial que no está relacionado con la muestra.
+
+###### ***4- Explicación del entrenamiento de árboles de decisión:** A continuación, se proporciona una breve explicación sobre la técnica de entrenamiento de árboles de decisión y se describen las funciones ctree() y predict() del paquete party para entrenar y predecir utilizando árboles de decisión, respectivamente.*
+
+######   *ctree(): Entrena un árbol de decisión.*
+######   *predict(): Realiza predicciones utilizando un modelo entrenado.*
+
+
+
+## Entrenamiento de árbol de decisión
+
+Esta técnica utiliza un set de datos representativos de una situación y utilizando recursivamente el teorema de Bayes, se puede armar un pronosticador o clasificador de datos. Es una técnica parecida a la de clustering, pero más refinada, pues no se basa en reglas sino en parendizaje del set de datos usado como entrenamento. En el paquete party existen dos funciones ctree  que se utiliza para entrenar y predict que se usa para pronosticar o generar la regla de decición que debemos usar. 
+
+
+###### ***5- Entrenamiento del árbol de decisión:** Se divide el conjunto de datos en conjuntos de entrenamiento y prueba, se define la fórmula de predicción y se entrena el árbol de decisión utilizando la función ctree(). Luego, se evalúa el rendimiento del modelo utilizando la tabla de confusión.*
+
+###### *sample(): Toma una muestra aleatoria de los datos.*
+
+```{r}
+library(party)
+attach(partners)
+str(partners)    
+# describe al objeto transit y muestras las columna que tiene
+
+ind <- sample(2, nrow(partners), replace=TRUE, prob=c(0.7, 0.3))  
+# toma una muestra  
+ind  
+# nos imprime la muestra tomada.
+```
+
+
+```{r}
+trainData <- partners [ind==1,]    
+# genero un set de entrenamiento 
+testData <- partners [ind==2,]    
+# genero un set de datos de prueba
+myFormula <- Empresa ~ Rec_Humano + Tecnologia + Capital + Equipo 
+transit_ctree <- ctree(myFormula, data=trainData)    
+# creo el motor de entrenamiento
+# Verificar las prediciones 
+table(predict(transit_ctree), trainData$Empresa) 
+print(transit_ctree) 
+```
+
+######  *library(party): Esta línea carga el paquete party, que proporciona funciones para el análisis de árboles de decisión y técnicas de clasificación.*
+
+######  *attach(partners): Esta función adjunta el conjunto de datos partners, lo que permite acceder a las variables directamente por su nombre.*
+
+######  *ind <- sample(2, nrow(partners), replace=TRUE, prob=c(0.7, 0.3)): Esta línea crea un vector de índices aleatorios que se utilizarán para dividir el conjunto de datos en conjuntos de entrenamiento y prueba.*
+
+######  *trainData <- partners[ind==1,]: Esta línea selecciona las observaciones correspondientes al conjunto de entrenamiento utilizando los índices generados anteriormente.*
+
+######  *testData <- partners[ind==2,]: Esta línea selecciona las observaciones correspondientes al conjunto de prueba utilizando los índices generados anteriormente.*
+
+######  *myFormula <- Empresa ~ Rec_Humano + Tecnologia + Capital + Equipo: Esta línea define la fórmula de predicción para el árbol de decisión. En este caso, se predice la variable "Empresa" en función de las variables "Rec_Humano", "Tecnologia", "Capital" y "Equipo".*
+
+######  *transit_ctree <- ctree(myFormula, data=trainData): Esta línea entrena el árbol de decisión utilizando la función ctree() del paquete party.*
+
+######  *table(predict(transit_ctree), trainData$Empresa): Esta línea evalúa el rendimiento del modelo entrenado mostrando una tabla de confusión que compara las predicciones del modelo con los valores reales de la variable "Empresa" en el conjunto de entrenamiento.*
+
+
+
+```{r}
+library(party)
+attach(partners)
+str(partners)    
+# describe al objeto transit
+ind <- sample(2, nrow(partners), replace=TRUE, prob=c(0.7, 0.3))  
+# toma una muestra 
+ind  
+# nos imprime la muestra tomada.
+```
+
+
+
+
+
+
+```{r}
+table(predict(transit_ctree), trainData$Empresa) 
+```
+
+###### ***7- Impresión del árbol de decisión:** Se visualiza el árbol de decisión utilizando la función plot().*
+
+Impresión del Árbol de Decisión
+
+```{r}
+plot(transit_ctree, las=2)
+```
+
+###### ***8- Resumen de la variable de interés:** Se muestra un resumen de la variable de interés (en este caso, "Empresa").*
+
+###### *summary(): Muestra un resumen estadístico de los datos.*
+
+```{r}
+summary(trainData$Empresa)
+```
+#### *En resumen, este código proporciona una guía paso a paso sobre cómo entrenar y evaluar un árbol de decisión utilizando R Markdown, e incluye explicaciones y visualizaciones útiles para comprender el proceso.*
+
+
